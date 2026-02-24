@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>2026 Northeast Blizzard — Snowfall Reports</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    /* iOS Safari fix: fill-available prevents toolbar overlap */
+    html { height: -webkit-fill-available; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
       background: #060a14;
       color: #ddeeff;
       height: 100vh;
+      height: 100dvh; /* dynamic viewport — correct on iOS */
+      min-height: -webkit-fill-available;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -36,7 +40,7 @@
       text-shadow: 0 0 24px rgba(80, 160, 255, 0.6);
     }
     .header-text p { font-size: 0.72rem; color: #607090; margin-top: 2px; }
-    .main { display: flex; flex: 1; overflow: hidden; }
+    .main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
 
     /* ── SIDEBAR ── */
     .sidebar {
@@ -113,7 +117,7 @@
     .top-tag { font-size: 0.58rem; color: #3a5878; flex-shrink: 0; }
 
     /* Map */
-    #map { flex: 1; }
+    #map { flex: 1; min-height: 0; min-width: 0; }
 
     /* Popup */
     .leaflet-popup-content-wrapper {
@@ -141,6 +145,8 @@
       flex-shrink: 0;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      /* Safe area for iPhone home indicator */
+      padding-bottom: calc(11px + env(safe-area-inset-bottom));
     }
     .drawer-mini-stats { display: flex; gap: 20px; }
     .drawer-mini-stat { text-align: center; }
@@ -152,14 +158,18 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
-      header { padding: 10px 14px; gap: 10px; }
+      header {
+        padding: 10px 14px;
+        padding-top: calc(10px + env(safe-area-inset-top));
+        gap: 10px;
+      }
       .flake { font-size: 1.6rem; }
       .header-text h1 { font-size: 0.95rem; }
       .header-text p { display: none; }
 
-      .main { flex-direction: column; }
+      .main { flex-direction: column; min-height: 0; }
 
-      #map { order: 1; flex: 1; min-height: 0; }
+      #map { order: 1; flex: 1; min-height: 0; width: 100%; }
 
       .drawer-btn { order: 2; display: flex; }
 
@@ -173,9 +183,12 @@
         padding: 0 14px;
         gap: 10px;
         transition: max-height 0.35s ease, padding 0.35s ease;
+        /* smooth scrolling on iOS */
+        -webkit-overflow-scrolling: touch;
       }
       .sidebar.mobile-open {
-        max-height: 56vh;
+        max-height: 52dvh;
+        max-height: 52vh; /* fallback */
         padding: 12px 14px;
         overflow-y: auto;
       }
