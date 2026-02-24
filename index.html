@@ -132,6 +132,16 @@
     .pu-loc { font-weight: 700; font-size: 0.9rem; color: #fff; margin-bottom: 2px; }
     .pu-snow { font-size: 2.2rem; font-weight: 900; line-height: 1; margin: 4px 0; }
     .pu-meta { font-size: 0.68rem; color: #5080a0; margin-top: 4px; line-height: 1.5; }
+    .pu-warn {
+      font-size: 0.63rem;
+      color: #e0a020;
+      background: rgba(245,166,35,0.1);
+      border: 1px solid rgba(245,166,35,0.3);
+      border-radius: 4px;
+      padding: 3px 7px;
+      margin: 5px 0 2px;
+      line-height: 1.4;
+    }
 
     /* ── MOBILE DRAWER TOGGLE ── */
     .drawer-btn {
@@ -209,7 +219,7 @@
   <div class="flake">❄</div>
   <div class="header-text">
     <h1>2026 Northeast Blizzard — Snowfall Reports</h1>
-    <p>February 23, 2026 · NWS New York (KOKX) · NOUS41 KOKX 240036 · Click any marker for details</p>
+    <p>February 23, 2026 · NWS New York (KOKX) + NWS Albany (KALY) · Click any marker for details</p>
   </div>
 </header>
 
@@ -263,6 +273,10 @@
       <div class="legend-labels">
         <span>0"</span><span>8"</span><span>16"</span><span>24"</span><span>32"</span>
       </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px;">
+        <span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:2.5px solid #f5a623;background:rgba(245,166,35,0.15);flex-shrink:0;"></span>
+        <span style="font-size:0.6rem;color:#a07820;">Amber border = mid-storm total (NWS Albany, ~6–9 AM)</span>
+      </div>
     </div>
 
     <!-- Top reports -->
@@ -299,7 +313,7 @@
 
 <script>
 // ─── DATA ───────────────────────────────────────────────────────────────────────
-// [lat, lon, snow_inches, location, county, state, provider]
+// [lat, lon, snow_inches, location, county, state, provider, mid_storm?]
 const DATA = [
   // Connecticut — Fairfield
   [41.4313,-73.2631,12.0,"3 ENE Newtown","Fairfield","CT","Public"],
@@ -612,6 +626,20 @@ const DATA = [
   [41.021,-73.7962,24.0,"1 SE Hartsdale","Westchester","NY","Trained Spotter"],
   [41.0698,-73.7783,24.0,"1 S Valhalla","Westchester","NY","Public"],
   [40.9845,-73.8277,24.1,"1 SSW Greenville","Westchester","NY","Public"],
+  // New York — Dutchess (NWS Albany mid-storm reports, ~3–9 AM Feb 23)
+  [41.513,-73.827,13.0,"4 ESE Fishkill","Dutchess","NY","",true],
+  [41.591,-73.705,12.0,"2 SSE Poughquag","Dutchess","NY","Public",true],
+  [41.680,-73.868,8.0,"2 SE Arlington","Dutchess","NY","Trained Spotter",true],
+  [41.613,-73.740,7.7,"Lagrangeville 2.9 NE","Dutchess","NY","COCORAHS",true],
+  [41.928,-73.912,7.5,"Rhinebeck","Dutchess","NY","Trained Spotter",true],
+  [41.618,-73.720,7.5,"Poughquag","Dutchess","NY","Public",true],
+  [41.700,-73.858,7.5,"Poughkeepsie 3.3 E","Dutchess","NY","COCORAHS",true],
+  [41.657,-73.921,7.3,"3 S Poughkeepsie","Dutchess","NY","Public",true],
+  [41.811,-73.665,6.5,"Millbrook 2.5 NE","Dutchess","NY","COCORAHS",true],
+  [41.578,-73.938,6.0,"2 SW Wappingers Falls","Dutchess","NY","Public",true],
+  [41.999,-73.837,5.0,"3 WSW Elizaville","Dutchess","NY","",true],
+  [42.036,-73.881,4.0,"2 SE Tivoli","Dutchess","NY","",true],
+  [42.025,-73.894,3.0,"2 NNW Red Hook","Dutchess","NY","",true],
 ];
 
 // ─── COLOR INTERPOLATION ────────────────────────────────────────────────────────
@@ -658,21 +686,22 @@ function buildMarkers(subset) {
   markers.forEach(m => m.circle.remove());
   markers = [];
   subset.forEach(d => {
-    const [lat,lon,snow,loc,county,state,prov] = d;
+    const [lat,lon,snow,loc,county,state,prov,midStorm] = d;
     const col = snowColor(snow);
     const r   = Math.max(5, snow * 0.65);
     const extreme = snow >= 29;
     const c = L.circleMarker([lat,lon], {
       radius: r,
       fillColor: col,
-      color: extreme ? '#ffffff' : col,
-      weight: extreme ? 1.5 : 0.5,
-      opacity: extreme ? 0.9 : 0.6,
-      fillOpacity: extreme ? 0.88 : 0.72,
+      color: extreme ? '#ffffff' : midStorm ? '#f5a623' : col,
+      weight: midStorm ? 2.5 : extreme ? 1.5 : 0.5,
+      opacity: 0.9,
+      fillOpacity: midStorm ? 0.6 : extreme ? 0.88 : 0.72,
     });
     c.bindPopup(`
       <div class="pu-loc">${loc}</div>
       <div class="pu-snow" style="color:${col}">${snow.toFixed(1)}"</div>
+      ${midStorm ? '<div class="pu-warn">⚠ Mid-storm total — NWS Albany ~6–9 AM<br>Final total may be higher</div>' : ''}
       <div class="pu-meta">
         ${county} County, ${state}<br>
         ${prov || 'Source unspecified'}
@@ -728,7 +757,7 @@ let activeCounty = 'all';
 const COUNTY_MAP = {
   CT: ['Fairfield','Middlesex','New Haven','New London'],
   NJ: ['Bergen','Essex','Hudson','Passaic','Union'],
-  NY: ['Bronx','Kings','Nassau','New York','Orange','Putnam','Queens','Richmond','Rockland','Suffolk','Westchester'],
+  NY: ['Bronx','Dutchess','Kings','Nassau','New York','Orange','Putnam','Queens','Richmond','Rockland','Suffolk','Westchester'],
 };
 
 function getSubset() {
